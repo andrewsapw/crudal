@@ -6,20 +6,19 @@ from sqlalchemy import Select
 
 from sqlalchemy.orm import DeclarativeBase
 
+from .base import _select_stmt_fields
+
 _T = t.TypeVar("_T")
 
 
 def find(cls: t.Union[t.Any, t.Tuple], **kwargs) -> Select:
-    if isinstance(t, tuple) or isinstance(t, list):
-        stmt = select(*cls).filter(**kwargs)
-    else:
-        stmt = select(cls).filter(**kwargs)
-
+    select_stmt = _select_stmt_fields(fields=cls)
+    stmt = select_stmt.filter(**kwargs)
     return stmt
 
 
-def all(cls, **kwargs):
-    stmt = select(cls)
+def all(cls):
+    stmt = _select_stmt_fields(fields=cls)
     return stmt
 
 

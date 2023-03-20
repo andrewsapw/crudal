@@ -6,7 +6,6 @@ from sqlalchemy import ScalarResult
 from crudal import operations
 
 _T = t.TypeVar("_T")
-_F = t.TypeVar("_F")
 
 
 def _execute_crud_stmt(stmt, session: Session) -> ScalarResult:
@@ -15,17 +14,10 @@ def _execute_crud_stmt(stmt, session: Session) -> ScalarResult:
 
 class DeclarativeCrudBase(DeclarativeBase):
     @classmethod
-    def find(
-        cls, session: Session, fields: t.Optional[t.Tuple] = None, **filters
-    ) -> ScalarResult:
-        if fields:
-            return_fields = fields
-        else:
-            return_fields = cls
-
-        stmt = operations.find(return_fields, **filters)
+    def find(cls: t.Type[_T], session: Session, **filters) -> t.Sequence[_T]:
+        stmt = operations.find(cls, **filters)
         result = _execute_crud_stmt(stmt, session=session)
-        return result
+        return result.all()
 
     @classmethod
     def exists(cls, session: Session, **filters) -> bool:
@@ -48,7 +40,3 @@ class DeclarativeCrudBase(DeclarativeBase):
         delete_stmt = operations.delete_(cls=cls, **filters)
         session.execute(delete_stmt)
         return True
-
-
-class Test(DeclarativeCrudBase):
-    ...
