@@ -8,12 +8,23 @@ pip install crudal
 
 ## Features
 
+Sync:
 - [ ] Find
 - [ ] Find by primary key
 - [ ] Add
 - [ ] Add many
 - [ ] Delete
 - [ ] Update
+
+Async:
+- [ ] Find
+  - [ ] with options
+- [ ] Find by primary key
+- [ ] Add
+- [ ] Add many
+- [ ] Delete
+- [ ] Update
+
 
 ## Usage
 
