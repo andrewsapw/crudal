@@ -119,7 +119,7 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
         """Add many new items to table"""
         session.add_all(items)
 
-    async def add(self, session: AsyncSession, commit: bool = False) -> None:
+    async def add(self: _T, session: AsyncSession, commit: bool = False) -> _T:
         """Add one item to table.
 
         Args:
@@ -130,7 +130,7 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
         if commit:
             await session.commit()
 
-        return
+        return self
 
     @classmethod
     async def update(cls: t.Type[_T], session: AsyncSession, values: dict, **filters):
