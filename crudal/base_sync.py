@@ -1,6 +1,6 @@
 import typing as t
 
-from sqlalchemy import ScalarResult
+from sqlalchemy import Result, ScalarResult
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import DeclarativeBase, Session
 
@@ -10,8 +10,12 @@ from crudal.types import CRUDALType
 _T = t.TypeVar("_T", bound=CRUDALType)
 
 
-def _execute_crud_stmt(stmt, session: Session) -> ScalarResult:
+def _crud_stmt_scalars(stmt, session: Session) -> ScalarResult:
     return session.scalars(stmt)
+
+
+def _crud_stmt_execute(stmt, session: Session) -> Result:
+    return session.execute(stmt)
 
 
 class DeclarativeCrudBase(DeclarativeBase):
@@ -38,14 +42,15 @@ class DeclarativeCrudBase(DeclarativeBase):
 
         Args:
             session (Session): SQLAlchemy session
-            rows
+            rows(int, optional): Number of rows to return. Defaults to None.
+            offset(int, optional): Number of rows to skip. Defaults to 0.
             **filters: search filters
 
         Returns:
             t.Sequence[_T]: Found items
         """
         stmt = operations.find(cls, offset=offset, rows=rows, **filters)
-        result = _execute_crud_stmt(stmt, session=session)
+        result = _crud_stmt_scalars(stmt, session=session)
         return result.all()
 
     @classmethod
@@ -86,14 +91,14 @@ class DeclarativeCrudBase(DeclarativeBase):
             bool: True if exists, False if not
         """
         stmt = operations.find(cls, **filters)
-        result = _execute_crud_stmt(stmt, session=session)
+        result = _crud_stmt_scalars(stmt, session=session)
         return True if result.first() is not None else False
 
     @classmethod
     def all(cls: t.Type[_T], session: Session) -> t.Sequence[_T]:
         """Get all table items"""
         stmt = operations.find(cls)
-        result = _execute_crud_stmt(stmt, session=session)
+        result = _crud_stmt_scalars(stmt, session=session)
         return result.all()
 
     @classmethod
@@ -112,7 +117,7 @@ class DeclarativeCrudBase(DeclarativeBase):
         """Add many new items to table"""
         session.add_all(items)
 
-    def add(self, session: Session, commit: bool = False) -> None:
+    def add(self: _T, session: Session, commit: bool = False) -> _T:
         """Add one item to table.
 
         Args:
@@ -122,4 +127,11 @@ class DeclarativeCrudBase(DeclarativeBase):
         session.add(self)
         if commit:
             session.commit()
-        return
+
+        return self
+
+    @classmethod
+    def update(cls: t.Type[_T], session: Session, values: dict, **filters):
+        """Update table items values"""
+        stmt = operations.update_(cls, values=values, **filters)
+        return _crud_stmt_execute(stmt=stmt, session=session)

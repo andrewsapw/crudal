@@ -39,7 +39,8 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
 
         Args:
             session (AsyncSession): SQLAlchemy session
-            rows
+            rows(int, optional): Number of rows to return. Defaults to None.
+            offset(int, optional): Number of rows to skip. Defaults to 0.
             **filters: search filters
 
         Returns:
@@ -130,3 +131,9 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
             await session.commit()
 
         return
+
+    @classmethod
+    async def update(cls: t.Type[_T], session: AsyncSession, values: dict, **filters):
+        """Update table items values"""
+        stmt = operations.update_(cls, values=values, **filters)
+        return await _execute_crud_stmt(stmt=stmt, session=session)
