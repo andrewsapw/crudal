@@ -17,16 +17,18 @@ async def _execute_crud_stmt(stmt, session: AsyncSession) -> ScalarResult:
 
 class DeclarativeCrudBaseAsync(DeclarativeBase):
     @classmethod
-    def _get_primary_key(cls):
-        """Return PK column name
-
-        Returns:
-            str: PK column name
-        """
+    def _get_primary_key(cls) -> str:
+        """Return PK column name"""
         return inspect(cls).primary_key[0].name
 
     @classmethod
-    async def find(cls: t.Type[_T], session: AsyncSession, **filters) -> t.Sequence[_T]:
+    async def find(
+        cls: t.Type[_T],
+        session: AsyncSession,
+        rows: t.Optional[int] = None,
+        offset: int = 0,
+        **filters,
+    ) -> t.Sequence[_T]:
         """Find items in table.
 
         Example:
@@ -37,12 +39,13 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
 
         Args:
             session (AsyncSession): SQLAlchemy session
+            rows
             **filters: search filters
 
         Returns:
             t.Sequence[_T]: Found items
         """
-        stmt = operations.find(cls, **filters)
+        stmt = operations.find(cls, offset=offset, rows=rows, **filters)
         result = await _execute_crud_stmt(stmt, session=session)
         return result.all()
 
@@ -92,7 +95,7 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
 
     @classmethod
     async def all(cls: t.Type[_T], session: AsyncSession) -> t.Sequence[_T]:
-        """Get all table values"""
+        """Get all table items"""
         stmt = operations.find(cls)
         result = await _execute_crud_stmt(stmt, session=session)
         return result.all()
