@@ -1,6 +1,6 @@
 import typing as t
 
-from sqlalchemy import ScalarResult
+from sqlalchemy import Result, ScalarResult
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import DeclarativeBase
@@ -11,8 +11,12 @@ from crudal.types import CRUDALTypeAsync
 _T = t.TypeVar("_T", bound=CRUDALTypeAsync)
 
 
-async def _execute_crud_stmt(stmt, session: AsyncSession) -> ScalarResult:
+async def _crud_stmt_scalars(stmt, session: AsyncSession) -> ScalarResult:
     return await session.scalars(stmt)
+
+
+async def _crud_stmt_execute(stmt, session: AsyncSession) -> Result:
+    return await session.execute(stmt)
 
 
 class DeclarativeCrudBaseAsync(DeclarativeBase):
@@ -47,7 +51,7 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
             t.Sequence[_T]: Found items
         """
         stmt = operations.find(cls, offset=offset, rows=rows, **filters)
-        result = await _execute_crud_stmt(stmt, session=session)
+        result = await _crud_stmt_scalars(stmt, session=session)
         return result.all()
 
     @classmethod
@@ -91,14 +95,14 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
             bool: True if exists, False if not
         """
         stmt = operations.find(cls, **filters)
-        result = await _execute_crud_stmt(stmt, session=session)
+        result = await _crud_stmt_scalars(stmt, session=session)
         return True if result.first() is not None else False
 
     @classmethod
     async def all(cls: t.Type[_T], session: AsyncSession) -> t.Sequence[_T]:
         """Get all table items"""
         stmt = operations.find(cls)
-        result = await _execute_crud_stmt(stmt, session=session)
+        result = await _crud_stmt_scalars(stmt, session=session)
         return result.all()
 
     @classmethod
@@ -136,4 +140,4 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
     async def update(cls: t.Type[_T], session: AsyncSession, values: dict, **filters):
         """Update table items values"""
         stmt = operations.update_(cls, values=values, **filters)
-        return await _execute_crud_stmt(stmt=stmt, session=session)
+        return await _crud_stmt_execute(stmt=stmt, session=session)
