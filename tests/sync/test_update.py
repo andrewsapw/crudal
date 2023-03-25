@@ -2,13 +2,13 @@ from conftest import Person
 from sqlalchemy.orm import Session
 
 
-def test_update(session: Session):
+def test_update(session: Session, random_string):
     p = Person(name="AndrewSON")
     p = p.add(session=session, commit=True)
 
     assert p in p.all(session=session)
 
-    new_name = "AndrewSON new Name"
+    new_name = random_string
     new_values = dict(name=new_name)
     Person.update(session=session, values=new_values, name="AndrewSON")
 
