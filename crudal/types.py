@@ -13,7 +13,15 @@ class CRUDALType(t.Protocol):
         raise NotImplementedError()
 
     @classmethod
-    def find(cls: t.Type[_T], session: Session, **filters) -> t.Sequence[_T]:
+    def find(
+        cls: t.Type[_T],
+        session: t.Optional[AsyncSession] = None,
+        /,
+        *,
+        rows: t.Optional[int] = None,
+        offset: int = 0,
+        **filters,
+    ) -> t.Sequence[_T]:
         """Find items"""
         raise NotImplementedError()
 
@@ -43,12 +51,24 @@ class CRUDALType(t.Protocol):
 
 class CRUDALTypeAsync(t.Protocol):
     @classmethod
+    def _session(cls):
+        raise NotImplementedError()
+
+    @classmethod
     def _get_primary_key(cls) -> str:
         """Table primary key"""
         raise NotImplementedError()
 
     @classmethod
-    async def find(cls: t.Type[_T], session: AsyncSession, **filters) -> t.Sequence[_T]:
+    async def find(
+        cls: t.Type[_T],
+        session: t.Optional[AsyncSession] = None,
+        /,
+        *,
+        rows: t.Optional[int] = None,
+        offset: int = 0,
+        **filters,
+    ) -> t.Sequence[_T]:
         """Find items"""
         raise NotImplementedError()
 
