@@ -21,12 +21,8 @@ async def _crud_stmt_execute(stmt, session: AsyncSession) -> Result:
 
 
 class DeclarativeCrudBaseAsync(DeclarativeBase):
-    @classmethod
-    def _session(cls):
-        if hasattr(cls, "__session__"):
-            return cls.__session__  # type: ignore
-
-        return None
+    __mapper_args__ = {"eager_defaults": True}
+    __session__ = None
 
     @classmethod
     def _get_primary_key(cls) -> str:
@@ -120,14 +116,20 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
 
     @classmethod
     @with_session_async
-    async def delete(cls, session: AsyncSession, /, **filters) -> bool:
+    async def delete(
+        cls, session: AsyncSession, /, commit: bool = False, **filters
+    ) -> bool:
         """Delete items from table"""
-        exists = cls.exists(session, **filters)
+        exists = await cls.exists(session, **filters)
         if not exists:
             return False
 
         delete_stmt = operations.delete_(cls=cls, **filters)
         await session.execute(delete_stmt)
+
+        if commit:
+            await session.commit()
+
         return True
 
     @classmethod
@@ -149,6 +151,7 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
         session.add(self)
         if commit:
             await session.commit()
+            await session.refresh(self)
 
         return self
 
