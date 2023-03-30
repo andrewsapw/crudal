@@ -78,7 +78,7 @@ class DeclarativeCrudBase(DeclarativeBase):
                 If None - no items with such primary keys exists
         """
         pk_col = cls._get_primary_key()
-        result = cls.find(session=session, **{pk_col: pk})
+        result = cls.find(session, **{pk_col: pk})
         if len(result) == 1:
             return result[0]
         elif len(result) > 1:
@@ -114,9 +114,9 @@ class DeclarativeCrudBase(DeclarativeBase):
 
     @classmethod
     @with_session_sync
-    def delete(cls, session: Session, /, commit: bool = False, **filters) -> bool:
+    def delete(cls, session: Session, /, *, commit: bool = False, **filters) -> bool:
         """Delete items from table"""
-        exists = cls.exists(session=session, **filters)
+        exists = cls.exists(session, **filters)
         if not exists:
             return False
 
@@ -149,7 +149,9 @@ class DeclarativeCrudBase(DeclarativeBase):
 
     @classmethod
     @with_session_sync
-    def update(cls: t.Type[_T], session: Session, /, *, values: dict, **filters):
+    def update(
+        cls: t.Type[_T], session: Session, /, *, values: dict, **filters
+    ) -> t.Type[_T]:
         """Update table items values"""
         stmt = operations.update_(cls, values=values, **filters)
         return _crud_stmt_execute(stmt=stmt, session=session)
