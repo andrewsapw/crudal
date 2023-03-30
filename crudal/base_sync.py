@@ -6,6 +6,7 @@ from sqlalchemy.orm import DeclarativeBase, Session
 
 from crudal import operations
 from crudal.types import CRUDALType
+from crudal.utils import with_session_sync
 
 _T = t.TypeVar("_T", bound=CRUDALType)
 
@@ -19,15 +20,20 @@ def _crud_stmt_execute(stmt, session: Session) -> Result:
 
 
 class DeclarativeCrudBase(DeclarativeBase):
+    __session__ = None
+
     @classmethod
     def _get_primary_key(cls):
         """Return PK column name"""
         return inspect(cls).primary_key[0].name
 
     @classmethod
+    @with_session_sync
     def find(
         cls: t.Type[_T],
         session: Session,
+        /,
+        *,
         rows: t.Optional[int] = None,
         offset: int = 0,
         **filters,
@@ -54,7 +60,10 @@ class DeclarativeCrudBase(DeclarativeBase):
         return result.all()
 
     @classmethod
-    def find_by_pk(cls: t.Type[_T], session: Session, pk: t.Any) -> t.Optional[_T]:
+    @with_session_sync
+    def find_by_pk(
+        cls: t.Type[_T], session: Session, /, *, pk: t.Any
+    ) -> t.Optional[_T]:
         """Find row by its primary key
 
         Args:
@@ -80,7 +89,8 @@ class DeclarativeCrudBase(DeclarativeBase):
             return None
 
     @classmethod
-    def exists(cls, session: Session, **filters) -> bool:
+    @with_session_sync
+    def exists(cls, session: Session, /, **filters) -> bool:
         """Check if items exists in table
 
         Args:
@@ -95,14 +105,16 @@ class DeclarativeCrudBase(DeclarativeBase):
         return True if result.first() is not None else False
 
     @classmethod
-    def all(cls: t.Type[_T], session: Session) -> t.Sequence[_T]:
+    @with_session_sync
+    def all(cls: t.Type[_T], session: Session, /) -> t.Sequence[_T]:
         """Get all table items"""
         stmt = operations.find(cls)
         result = _crud_stmt_scalars(stmt, session=session)
         return result.all()
 
     @classmethod
-    def delete(cls, session: Session, **filters) -> bool:
+    @with_session_sync
+    def delete(cls, session: Session, /, commit: bool = False, **filters) -> bool:
         """Delete items from table"""
         exists = cls.exists(session=session, **filters)
         if not exists:
@@ -110,14 +122,19 @@ class DeclarativeCrudBase(DeclarativeBase):
 
         delete_stmt = operations.delete_(cls=cls, **filters)
         session.execute(delete_stmt)
+        if commit:
+            session.commit()
+
         return True
 
     @classmethod
-    def add_many(cls: t.Type[_T], session: Session, items: t.List[_T]) -> None:
+    @with_session_sync
+    def add_many(cls: t.Type[_T], session: Session, /, *, items: t.List[_T]) -> None:
         """Add many new items to table"""
         session.add_all(items)
 
-    def add(self: _T, session: Session, commit: bool = False) -> _T:
+    @with_session_sync
+    def add(self: _T, session: Session, /, *, commit: bool = False) -> _T:
         """Add one item to table.
 
         Args:
@@ -131,7 +148,8 @@ class DeclarativeCrudBase(DeclarativeBase):
         return self
 
     @classmethod
-    def update(cls: t.Type[_T], session: Session, values: dict, **filters):
+    @with_session_sync
+    def update(cls: t.Type[_T], session: Session, /, *, values: dict, **filters):
         """Update table items values"""
         stmt = operations.update_(cls, values=values, **filters)
         return _crud_stmt_execute(stmt=stmt, session=session)

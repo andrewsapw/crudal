@@ -7,6 +7,7 @@ from sqlalchemy.orm import DeclarativeBase
 
 from crudal import operations
 from crudal.types import CRUDALTypeAsync
+from crudal.utils import with_session_async
 
 _T = t.TypeVar("_T", bound=CRUDALTypeAsync)
 
@@ -20,15 +21,21 @@ async def _crud_stmt_execute(stmt, session: AsyncSession) -> Result:
 
 
 class DeclarativeCrudBaseAsync(DeclarativeBase):
+    __mapper_args__ = {"eager_defaults": True}
+    __session__ = None
+
     @classmethod
     def _get_primary_key(cls) -> str:
         """Return PK column name"""
         return inspect(cls).primary_key[0].name
 
     @classmethod
+    @with_session_async
     async def find(
         cls: t.Type[_T],
         session: AsyncSession,
+        /,
+        *,
         rows: t.Optional[int] = None,
         offset: int = 0,
         **filters,
@@ -55,8 +62,9 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
         return result.all()
 
     @classmethod
+    @with_session_async
     async def find_by_pk(
-        cls: t.Type[_T], session: AsyncSession, pk: t.Any
+        cls: t.Type[_T], session: AsyncSession, /, *, pk: t.Any
     ) -> t.Optional[_T]:
         """Find row by its primary key
 
@@ -71,9 +79,8 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
             t.Optional[_T]: found item.
                 If None - no items with such primary keys exists
         """
-
         pk_col = cls._get_primary_key()
-        result = await cls.find(session=session, **{pk_col: pk})
+        result = await cls.find(session, **{pk_col: pk})
         if len(result) == 1:
             return result[0]
         elif len(result) > 1:
@@ -84,7 +91,8 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
             return None
 
     @classmethod
-    async def exists(cls, session: AsyncSession, **filters) -> bool:
+    @with_session_async
+    async def exists(cls, session: AsyncSession, /, **filters) -> bool:
         """Check if items exists in table
 
         Args:
@@ -99,31 +107,41 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
         return True if result.first() is not None else False
 
     @classmethod
-    async def all(cls: t.Type[_T], session: AsyncSession) -> t.Sequence[_T]:
+    @with_session_async
+    async def all(cls: t.Type[_T], session: AsyncSession, /) -> t.Sequence[_T]:
         """Get all table items"""
         stmt = operations.find(cls)
         result = await _crud_stmt_scalars(stmt, session=session)
         return result.all()
 
     @classmethod
-    async def delete(cls, session: AsyncSession, **filters) -> bool:
+    @with_session_async
+    async def delete(
+        cls, session: AsyncSession, /, commit: bool = False, **filters
+    ) -> bool:
         """Delete items from table"""
-        exists = cls.exists(session=session, **filters)
+        exists = await cls.exists(session, **filters)
         if not exists:
             return False
 
         delete_stmt = operations.delete_(cls=cls, **filters)
         await session.execute(delete_stmt)
+
+        if commit:
+            await session.commit()
+
         return True
 
     @classmethod
+    @with_session_async
     async def add_many(
-        cls: t.Type[_T], session: AsyncSession, items: t.List[_T]
+        cls: t.Type[_T], session: AsyncSession, /, *, items: t.List[_T]
     ) -> None:
         """Add many new items to table"""
         session.add_all(items)
 
-    async def add(self: _T, session: AsyncSession, commit: bool = False) -> _T:
+    @with_session_async
+    async def add(self: _T, session: AsyncSession, /, *, commit: bool = False) -> _T:
         """Add one item to table.
 
         Args:
@@ -133,11 +151,14 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
         session.add(self)
         if commit:
             await session.commit()
+            await session.refresh(self)
 
         return self
 
     @classmethod
-    async def update(cls: t.Type[_T], session: AsyncSession, values: dict, **filters):
+    async def update(
+        cls: t.Type[_T], session: AsyncSession, /, *, values: dict, **filters
+    ):
         """Update table items values"""
         stmt = operations.update_(cls, values=values, **filters)
         return await _crud_stmt_execute(stmt=stmt, session=session)
