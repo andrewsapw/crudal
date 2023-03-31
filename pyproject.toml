@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "crudal"
-version = "0.2.2"
+version = "0.3.1"
 description = "CRUD operations for SQLAlchemy models"
 authors = ["andrewsap <andrewsapw@gmail.com>"]
 license = "MIT"
