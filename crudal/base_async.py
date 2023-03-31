@@ -45,7 +45,7 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
         Example:
         ```
         # find all users with name Andrew
-        User.find(session=session, name="Andrew")
+        await User.find(session, name="Andrew")
         ```
 
         Args:
@@ -67,6 +67,12 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
         cls: t.Type[_T], session: AsyncSession, /, *, pk: t.Any
     ) -> t.Optional[_T]:
         """Find row by its primary key
+
+        Example:
+        ```
+        # find user with id 1
+        await User.find_by_pk(session, pk=1)
+        ```
 
         Args:
             session (AsyncSession): SQLAlchemy session
@@ -95,6 +101,12 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
     async def exists(cls, session: AsyncSession, /, **filters) -> bool:
         """Check if items exists in table
 
+        Example:
+        ```
+        # check if user with name Andrew exists
+        await User.exists(session, name="Andrew")
+        ```
+
         Args:
             session (AsyncSession): SQLAlchemy session
             **filters: search filters
@@ -109,7 +121,21 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
     @classmethod
     @with_session_async
     async def all(cls: t.Type[_T], session: AsyncSession, /) -> t.Sequence[_T]:
-        """Get all table items"""
+        """Get all table items
+
+        Example:
+        ```
+        # get all users
+        await User.all(session)
+        ```
+
+        Args:
+            session (AsyncSession): SQLAlchemy session
+
+        Returns:
+            t.Sequence[_T]: all table items
+
+        """
         stmt = operations.find(cls)
         result = await _crud_stmt_scalars(stmt, session=session)
         return result.all()
@@ -119,7 +145,21 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
     async def delete(
         cls, session: AsyncSession, /, commit: bool = False, **filters
     ) -> bool:
-        """Delete items from table"""
+        """Delete items from table
+
+        Example:
+        ```
+        # delete all users with name Andrew
+        await User.delete(session, name="Andrew")
+        ```
+
+        Args:
+            session (AsyncSession): SQLAlchemy session
+            commit (bool, optional): commit after deleting. Defaults to False.
+
+        Returns:
+            bool: _description_
+        """
         exists = await cls.exists(session, **filters)
         if not exists:
             return False
@@ -135,14 +175,39 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
     @classmethod
     @with_session_async
     async def add_many(
-        cls: t.Type[_T], session: AsyncSession, /, *, items: t.List[_T]
+        cls: t.Type[_T],
+        session: AsyncSession,
+        /,
+        *,
+        items: t.List[_T],
+        commit: bool = False,
     ) -> None:
-        """Add many new items to table"""
+        """Add many new items to table
+
+        Example:
+        ```
+        users = [User(name="Andrew"), User(name="Bob")]
+        await User.add_many(session, items=users)
+        ```
+
+        Args:
+            session (AsyncSession): SQLAlchemy session
+            items (t.List[_T]): list of items to add
+            commit (bool, optional): commit after adding. Defaults to False.
+        """
         session.add_all(items)
+        if commit:
+            await session.commit()
 
     @with_session_async
     async def add(self: _T, session: AsyncSession, /, *, commit: bool = False) -> _T:
         """Add one item to table.
+
+        Example:
+        ```
+        user = User(name="Andrew")
+        await user.add(session)
+        ```
 
         Args:
             session (AsyncSession): SQLAlchemy async session
@@ -159,6 +224,18 @@ class DeclarativeCrudBaseAsync(DeclarativeBase):
     async def update(
         cls: t.Type[_T], session: AsyncSession, /, *, values: dict, **filters
     ):
-        """Update table items values"""
+        """Update table items values
+
+        Example:
+        ```
+        # update all users with name Andrew to name Bob
+        await User.update(session, values={"name": "Bob"}, name="Andrew")
+        ```
+
+        Args:
+            session (AsyncSession): SQLAlchemy session
+            values (dict): values to update
+            **filters: search filters
+        """
         stmt = operations.update_(cls, values=values, **filters)
         return await _crud_stmt_execute(stmt=stmt, session=session)

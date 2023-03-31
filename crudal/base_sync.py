@@ -66,6 +66,12 @@ class DeclarativeCrudBase(DeclarativeBase):
     ) -> t.Optional[_T]:
         """Find row by its primary key
 
+        Example:
+        ```
+        # find user with id 1
+        User.find_by_pk(session=session, pk=1)
+        ```
+
         Args:
             session (Session): SQLAlchemy session
             pk (t.Any): primary key value
@@ -93,6 +99,12 @@ class DeclarativeCrudBase(DeclarativeBase):
     def exists(cls, session: Session, /, **filters) -> bool:
         """Check if items exists in table
 
+        Example:
+        ```
+        # check if user with name Andrew exists
+        User.exists(session, name="Andrew")
+        ```
+
         Args:
             session (AsyncSession): SQLAlchemy session
             **filters: search filters
@@ -107,7 +119,20 @@ class DeclarativeCrudBase(DeclarativeBase):
     @classmethod
     @with_session_sync
     def all(cls: t.Type[_T], session: Session, /) -> t.Sequence[_T]:
-        """Get all table items"""
+        """Get all table items
+
+        Example:
+        ```
+        # get all users
+        User.all(session)
+        ```
+
+        Args:
+            session (Session): SQLAlchemy session
+
+        Returns:
+            t.Sequence[_T]: Found items
+        """
         stmt = operations.find(cls)
         result = _crud_stmt_scalars(stmt, session=session)
         return result.all()
@@ -115,7 +140,22 @@ class DeclarativeCrudBase(DeclarativeBase):
     @classmethod
     @with_session_sync
     def delete(cls, session: Session, /, *, commit: bool = False, **filters) -> bool:
-        """Delete items from table"""
+        """Delete items from table
+
+        Example:
+        ```
+        # delete all users with name Andrew
+        User.delete(session, name="Andrew")
+        ```
+
+        Args:
+            session (Session): SQLAlchemy session
+            commit (bool, optional): Commit or not. Defaults to False.
+            **filters: search filters
+
+        Returns:
+            bool: True if deleted, False if not
+        """
         exists = cls.exists(session, **filters)
         if not exists:
             return False
@@ -129,13 +169,36 @@ class DeclarativeCrudBase(DeclarativeBase):
 
     @classmethod
     @with_session_sync
-    def add_many(cls: t.Type[_T], session: Session, /, *, items: t.List[_T]) -> None:
-        """Add many new items to table"""
+    def add_many(
+        cls: t.Type[_T], session: Session, /, *, items: t.List[_T], commit: bool = False
+    ) -> None:
+        """Add many new items to table
+
+        Example:
+        ```
+        # add new users
+        User.add_many(session, items=[User(name="Andrew"), User(name="John")])
+        ```
+
+        Args:
+            session (Session): SQLAlchemy session
+            items (t.List[_T]): items to add
+            commit (bool, optional): Commit or not. Defaults to False.
+
+        """
         session.add_all(items)
+        if commit:
+            session.commit()
 
     @with_session_sync
     def add(self: _T, session: Session, /, *, commit: bool = False) -> _T:
         """Add one item to table.
+
+        Example:
+        ```
+        # add new user
+        User(name="Andrew").add(session)
+        ```
 
         Args:
             session (Session): SQLAlchemy async session
@@ -152,6 +215,22 @@ class DeclarativeCrudBase(DeclarativeBase):
     def update(
         cls: t.Type[_T], session: Session, /, *, values: dict, **filters
     ) -> t.Type[_T]:
-        """Update table items values"""
+        """Update table items values
+
+        Example:
+        ```
+        # update all users with name Andrew to name John
+        User.update(session, values={"name": "John"}, name="Andrew")
+        ```
+
+        Args:
+            session (Session): SQLAlchemy session
+            values (dict): values to update
+            **filters: search filters
+
+        Returns:
+            t.Type[_T]: updated item
+
+        """
         stmt = operations.update_(cls, values=values, **filters)
         return _crud_stmt_execute(stmt=stmt, session=session)
