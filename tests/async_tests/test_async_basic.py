@@ -15,6 +15,18 @@ async def test_add(async_model: DeclarativeCrudBaseAsync, async_session: AsyncSe
 
 
 @pytest.mark.asyncio
+async def test_add_many(
+    async_model: DeclarativeCrudBaseAsync, async_session: AsyncSession
+):
+    p1 = async_model(name="Andrew")
+    p2 = async_model(name="John")
+    await async_model.add_many(async_session, items=[p1, p2], commit=True)
+
+    assert p1 in await async_model.all(async_session)
+    assert p2 in await async_model.all(async_session)
+
+
+@pytest.mark.asyncio
 async def test_delete(
     async_model: DeclarativeCrudBaseAsync, async_session: AsyncSession
 ):
