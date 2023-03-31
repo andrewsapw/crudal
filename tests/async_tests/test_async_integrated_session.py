@@ -1,5 +1,4 @@
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from crudal.base_async import DeclarativeCrudBaseAsync
 

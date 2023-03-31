@@ -1,14 +1,11 @@
 import pytest
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from crudal import DeclarativeCrudBaseAsync
 
 
 @pytest.mark.asyncio
-async def test_find(
-    async_model: DeclarativeCrudBaseAsync, async_session: AsyncSession
-):
+async def test_find(async_model: DeclarativeCrudBaseAsync, async_session: AsyncSession):
     p = async_model(name="Andrew")
     p = await p.add(async_session, commit=True)
 
@@ -18,7 +15,9 @@ async def test_find(
 
 
 @pytest.mark.asyncio
-async def test_find_by_pk(async_model: DeclarativeCrudBaseAsync, async_session: AsyncSession):
+async def test_find_by_pk(
+    async_model: DeclarativeCrudBaseAsync, async_session: AsyncSession
+):
     p = async_model(name="Andrew")
     p = await p.add(async_session, commit=True)
 
