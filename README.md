@@ -48,12 +48,12 @@ Find all users with name equals *Andrew*
 ```python
 users_found = User.find(name="Andrew")
 for u in users_found:
-    assert u.name == "Andrew" 
+    assert u.name == "Andrew"
 ```
 
 ### Update item
 
-Change name of all users with name *Andrew* to *John* 
+Change name of all users with name *Andrew* to *John*
 
 ```python
 User.update(session=session, values=dict(name="John"), name="Andrew")
