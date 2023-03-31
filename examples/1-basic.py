@@ -1,7 +1,7 @@
-from crudal import DeclarativeCrudBase
-
 from sqlalchemy import Integer, String, create_engine
 from sqlalchemy.orm import Mapped, mapped_column, sessionmaker
+
+from crudal import DeclarativeCrudBase
 
 engine = create_engine("sqlite://")
 SessionLocal = sessionmaker(engine, expire_on_commit=False)
@@ -31,4 +31,3 @@ for u in users_found:
 # Change name of all users with name "Andrew" to "John"
 new_values = dict(name="John")
 User.update(values=new_values, name="Andrew")
-
